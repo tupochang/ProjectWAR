@@ -6,11 +6,11 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
 
 - Windows x64、Visual Studio 的「.NET 桌面開發」工作負載、.NET Framework 4.8 Developer Pack。
 - MySQL Server 8.4、7-Zip、Git。可用 MySQL Workbench 執行 SQL。
-- 自備完整的 Warhammer Online **1.4.8 Build 573** 客戶端，包含 `WAR.exe`、`data.myp` 和 `world.myp`。以完整副本進行測試，保留原始客戶端。
+- 自備完整的 Warhammer Online **1.4.8 Build 573** 客戶端，包含 `WAR.exe`、`data.myp` 和 `world.myp`。以完整副本進行測試，將 `WAR.exe`、`data.myp`、原 Launcher 與設定的備份放在固定目錄。
 
 ## 1. 初始化資料庫
 
-1. 解開 [Database/Database.7z](Database/Database.7z)，依序在本機開發環境執行 `war_accounts.sql`、`war_characters.sql`、`war_world.sql`。依據 SQL 內的 `USE`，三份腳本分別使用 `war_accounts`、`war_characters` 和 `war_world_curated`。已有資料時先備份，初始 SQL 含建表與重建資料表指令。
+1. 解開 [Database/Database.7z](Database/Database.7z)，開啟 MySQL Workbench 並連線到本機 MySQL。用 **File → Open SQL Script** 逐一開啟 `war_accounts.sql`、`war_characters.sql`、`war_world.sql`，各按一次工具列的閃電圖示執行整份腳本。重新整理左側 **Schemas**，確認三個資料庫都出現。依據 SQL 內的 `USE`，三份腳本分別使用 `war_accounts`、`war_characters` 和 `war_world_curated`。已有資料時先備份，初始 SQL 含建表與重建資料表指令。
 2. 檢查 `war_accounts.realms`。本機驗收使用 `RealmId=1`、`Name=ProjectWAR`、`Adresse=127.0.0.1`、`Port=10300`。`RealmId` 必須與 `World.xml` 一致。
 3. 檢查遊戲物件原型數量：
 
@@ -28,29 +28,55 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
 
 ## 2. 編譯與放置設定
 
-1. 開啟 `ProjectWAR.sln`，還原 NuGet 套件，選擇 **Release | x64**。建置 `Launcher`、`AccountCacher`、`LauncherServer`、`LobbyServer`、`WorldServer`。伺服器產物在 `bin\Release`，新版 Launcher 在 `bin\Release\Launcher`。若另外要編譯原生 `WarZone` 專案，需對應方案設定的 MSVC 工具組。
+1. 開啟 `ProjectWAR.sln`，還原 NuGet 套件，選擇 **Release | x64**。建置 `Launcher`、`AccountCacher`、`LauncherServer`、`LobbyServer`、`WorldServer`。伺服器產物在 `bin\Release`，新版 Launcher 在 `bin\Release\Launcher`。若另外要編譯原生 `WarZone` 專案，需對應方案設定的 MSVC 工具組。若出現找不到 `NLog`，先確認 Launcher 專案的 NuGet 還原成功，再重新建置。
 2. 將 [ImportIntoProject](ImportIntoProject) 的內容複製到 `bin\Release`，保留 `Abilities`、`zones`、`los`、`Configs` 目錄結構。首次部署時，把 [WorldServer/Configs/LocalDevelopment](WorldServer/Configs/LocalDevelopment) 的四個 XML 複製到 `bin\Release\Configs`。
-3. 編輯執行目錄內的 XML。依本機 MySQL 設定填寫主機、使用者與密碼，並確認資料庫名稱：
+### 修改 XML（服務能啟動的關鍵）
 
-   | 設定檔 | 檢查項目 |
-   | --- | --- |
-   | `Account.xml` | `AccountDB` → `war_accounts`，RPC `127.0.0.1:6800` |
-   | `Launcher.xml` | RPC 指向 `127.0.0.1:6800`，Launcher TCP `8000` |
-   | `Lobby.xml` | RPC 指向 `127.0.0.1:6800`，Lobby TCP `8048` |
-   | `World.xml` | `CharacterDatabase` → `war_characters`，`WorldDatabase` → `war_world_curated`，`RealmId=1` |
+請用記事本或 Visual Studio 開啟 **`bin\Release\Configs`** 內的檔案。下面只列出要檢查或修改的段落，其他欄位保留範本內容。
 
-4. 把新版 Launcher 產物放進完整測試副本的 `Launcher` 子目錄。沿用既有部署時，保留測試副本的 `Launcher.exe.config` 與本機登入 XML 設定。確認 `LaunchLocal` 和 `AutoLaunch` 為 `true`。將 [登入設定範本](ImportIntoProject/Configs/mythloginserviceconfig.xml) 放在 `Launcher.exe` 同一目錄，確認 `LoginServer` 的 `Address` 與 `Port` 是 `127.0.0.1`、`8048`。
+1. **`Account.xml`**
+
+   把開頭的 `<AccountConfigs ...>` 改為 `<AccountConfig ...>`，保留標籤裡所有 `xmlns` 屬性。檔尾也改成 `</AccountConfig>`。這一步可修正 AccountCacher 的 XML 根節點錯誤。
+
+   在 `<AccountDB>` 裡填入 MySQL 主機、連接埠、使用者名稱與密碼，並確認 `<Database>war_accounts</Database>`。同機 MySQL 一般使用 `127.0.0.1:3306`。在 `<RpcInfo>` 保留 `<RpcPort>6800</RpcPort>`。
+2. **`Launcher.xml`**
+
+   範本中的 `<Message>` 那行缺少結束標籤。將整行改成：
+
+   ```xml
+   <Message>Invalid launcher version.</Message>
+   ```
+
+   確認 `<LauncherServerPort>8000</LauncherServerPort>` 和 `<RpcServerPort>6800</RpcServerPort>`。`RpcServerIp` 設為 `127.0.0.1`。
+3. **`Lobby.xml`**
+
+   確認 `<ClientPort>8048</ClientPort>` 和 `<ClientVersion>1.4.8</ClientVersion>`。`RpcServerIp` 設為 `127.0.0.1`，`RpcServerPort` 設為 `6800`。
+4. **`World.xml`**
+
+   在 `<CharacterDatabase>` 和 `<WorldDatabase>` 兩段都填寫 MySQL 連線資訊。角色資料庫使用 `<Database>war_characters</Database>`，世界資料庫使用 `<Database>war_world_curated</Database>`。`<RealmId>1</RealmId>` 要與 `war_accounts.realms` 裡的本機 Realm 一致。
+5. 四份檔案各自把 `<IConfiguredTheFile>false</IConfiguredTheFile>` 改為 `<IConfiguredTheFile>true</IConfiguredTheFile>`，然後存檔。保留 `bin\Release\Configs\mythloginserviceconfig.xml`，LauncherServer 啟動時也會讀取它。
+
+### 將新版 Launcher 放到測試客戶端
+
+從 `bin\Release\Launcher` 複製新版產物到完整遊戲副本的 `Launcher` 子目錄。若已經有可用的 Launcher 部署，先備份該子目錄，再替換 `Launcher.exe`，保留原有的 `Launcher.exe.config` 和登入 XML。確認 `LaunchLocal`、`AutoLaunch` 為 `true`。
+
+客戶端的 `mythloginserviceconfig.xml` 必須和 `Launcher.exe` 放在**同一層**。使用[登入設定範本](ImportIntoProject/Configs/mythloginserviceconfig.xml)，在 `<LoginServer>` 裡確認以下值。新版 Launcher 會用這份 XML 更新 `data.myp` 的既有登入資源。
+
+```xml
+<Address>127.0.0.1</Address>
+<Port>8048</Port>
+```
 
 ## 3. 啟動與登入驗收
 
-MySQL 啟動後，從 `bin\Release` 開四個終端機，依序啟動。每一步確認服務已監聽再開下一個。
+MySQL 啟動後，開四個 PowerShell 視窗，每個視窗都先切到專案的 `bin\Release` 目錄。依序執行下表的指令。等目前服務顯示正在監聽，再啟動下一個。
 
 | 順序 | 執行檔 | 本機連接埠 |
 | --- | --- | --- |
-| 1 | `AccountCacher.exe` | TCP 6800，內部 RPC |
-| 2 | `LauncherServer.exe` | TCP 8000 |
-| 3 | `LobbyServer.exe` | TCP 8048 |
-| 4 | `WorldServer.exe` | TCP 10300，由 Realm 記錄指定 |
+| 1 | `.\AccountCacher.exe` | TCP 6800，內部 RPC |
+| 2 | `.\LauncherServer.exe` | TCP 8000 |
+| 3 | `.\LobbyServer.exe` | TCP 8048 |
+| 4 | `.\WorldServer.exe` | TCP 10300，由 Realm 記錄指定 |
 
 ```powershell
 Get-NetTCPConnection -State Listen -LocalPort 6800,8000,8048,10300 |
@@ -58,11 +84,39 @@ Get-NetTCPConnection -State Listen -LocalPort 6800,8000,8048,10300 |
         @{Name='Process';Expression={(Get-Process -Id $_.OwningProcess).ProcessName}}
 ```
 
+首次使用可由 Launcher 的 **Create Account** 建立本機測試帳號。如果畫面回應不明確，可用以下唯讀查詢確認帳號是否建立。查不到資料時，檢查 LauncherServer 的 `CL_CREATE` 紀錄及 AccountCacher 的資料庫設定。分享日誌前請移除帳密、雜湊與 Token。
+
+```sql
+SELECT AccountId, Username
+FROM war_accounts.accounts
+WHERE Username = 'your_test_account';
+```
+
 1. 在測試副本的 `Launcher` 目錄執行 `.\Launcher.exe`。使用本機測試帳號登入。現有 Launcher 會在測試副本內更新 `WAR.exe` 與 `data.myp`。
 2. 檢查 Launcher 的 `logs` 是否記錄更新 `data/mythloginserviceconfig.xml` 成功。遊戲根目錄的 `logs/login.*.Log` 應記錄 `Attempting connection to 127.0.0.1:8048`。
 3. 在 LobbyServer 主控台核對 `LobbyServer..Connection` 與 `CMSG_VerifyProtocolReq`。再確認是否顯示 `ProjectWAR` 並可到達角色選擇。
 
 若登入後停在只有 `Server:` 的主選單，先核對本次遊戲日誌中的實際目的地，以及 `8048` 的程序是否為 `LobbyServer`。`8080` 是 Launcher 的背景檔案更新埠，請以 `8000` 的 Token 回應與 `8048` 的連線紀錄定位登入問題。
+
+## 4. 角色連線後卡在載入畫面
+
+這次部署的 WorldServer 日誌出現 `F_CONNECT User connection`，接著記錄 `AddObject` 的 Zone 6 錯誤。這表示角色連線已到世界服務，但尚未成功加入地圖。先核對角色存檔與區域資料，再檢查地圖資源。
+
+```sql
+SELECT c.CharacterId, v.ZoneId, v.RegionId AS SavedRegion, z.Region AS ZoneRegion
+FROM war_characters.characters AS c
+JOIN war_characters.characters_value AS v ON v.CharacterId = c.CharacterId
+LEFT JOIN war_world_curated.zone_infos AS z ON z.ZoneId = v.ZoneId
+WHERE c.Name = 'your_character';
+```
+
+- `ZoneRegion` 為 `NULL` 時，先查是否缺少該 Zone 定義。
+- `SavedRegion` 和 `ZoneRegion` 不同時，先檢查角色存檔位置與 Zone 定義。
+- 兩者相同時，檢查目前的 Region 是否已載入該 Zone。[角色進入世界的程式碼](WorldServer/NetWork/Handler/MovementHandlers.cs) · [Region 加入物件的程式碼](WorldServer/World/Map/RegionMgr.cs)
+
+WorldServer 預設從工作目錄下的 `zones/` 讀取地圖資料，從 `los/` 讀取視線遮蔽資料。以 Zone 6 為例，檢查 `bin/Release/zones/zone006/` 內的 `offset.png`、`terrain.png`，以及 `bin/Release/los/6.bin`。若缺地圖檔，原作者的 Zone Data v1 發布頁提供 `zones.zip`。解壓時保留 `zoneNNN` 子目錄，並確認 `ZoneFolder` 指向 WorldServer 執行時可讀取的位置。[設定範本](WorldServer/Configs/LocalDevelopment/World.xml) · [原作者 Zone Data v1](https://github.com/Shmerrick/ProjectWAR/releases/tag/zones-data-v1)
+
+目前待排查的項目包括 Zone 6 角色載入、`KeepNPC No FlagGuard Proto`、無效的生成資料與部分技能資料。若出現 `RegionOcclusionFolder` 警告，核對 LOS 設定和資料路徑。繁體中文化是後續工作，需分別驗證客戶端語言資源及伺服器提供的任務與 NPC 文字。
 
 ## 更新說明
 
