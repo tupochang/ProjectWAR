@@ -613,30 +613,32 @@ namespace Launcher
 
         public static void UpdateWarData()
         {
+            const string resourcePath = "data/mythloginserviceconfig.xml";
+            string configPath = Path.Combine(Application.StartupPath, "mythloginserviceconfig.xml");
+            string archivePath = Path.Combine(Directory.GetParent(Application.StartupPath).FullName, "data.myp");
+            long resourceHash = MYP.HashWAR(resourcePath);
+
+            _logger.Info($"Updating '{resourcePath}' (0x{resourceHash:X16}) in '{archivePath}' from '{configPath}'.");
+
             try
             {
-                _logger.Info("Updating data.myp");
-                FileStream fileStream = File.Open("..\\data.myp", FileMode.Open, FileAccess.ReadWrite);
-                MYP myp = new MYP(MythicPackage.ART, (Stream)fileStream);
+                byte[] data = File.ReadAllBytes(configPath);
+                using (FileStream fileStream = File.Open(archivePath, FileMode.Open, FileAccess.ReadWrite))
+                using (MYP myp = new MYP(MythicPackage.ART, fileStream))
+                {
+                    if (!myp.Enteries.TryGetValue(resourceHash, out MYP.MFTEntry entry) || entry.Offset == 0)
+                        throw new InvalidDataException($"Existing MYP resource '{resourcePath}' (0x{resourceHash:X16}) was not found.");
 
-                if (File.Exists(Application.StartupPath + "\\mythloginserviceconfig.xml") == false)
-                {
-                    _logger.Error("Missing file : mythloginserviceconfig.xml");
-                    return;
+                    myp.UpdateFile(resourceHash, data);
+                    myp.Save();
                 }
-                using (FileStream reader = new FileStream(Application.StartupPath + "\\mythloginserviceconfig.xml", FileMode.Open))
-                {
-                    byte[] data = new byte[reader.Length];
-                    reader.Read(data, 0, data.Length);
-                    myp.UpdateFile(0x0B3E7AC0C6762BF7, data);
-                }
-                myp.Save();
-                fileStream.Close();
+
+                _logger.Info($"Updated '{resourcePath}' in '{archivePath}' ({data.Length} bytes).");
             }
             catch (Exception e)
             {
-                Print(e.ToString());
-                _logger.Info(e.ToString());
+                _logger.Error(e, $"Failed to update '{resourcePath}' in '{archivePath}' from '{configPath}'.");
+                throw;
             }
         }
 

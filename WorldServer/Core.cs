@@ -210,6 +210,17 @@ namespace WorldServer
             Log.Debug("Battlefront Manager", "Getting Progression based upon rvr_progression.LastOpenedZone");
             WorldMgr.UpperTierCampaignManager.GetActiveBattleFrontFromProgression();
             WorldMgr.LowerTierCampaignManager.GetActiveBattleFrontFromProgression();
+
+            // Ensure the active battlefront regions exist before attaching campaigns.
+            WorldMgr.GetRegion(
+                (ushort)WorldMgr.UpperTierCampaignManager.ActiveBattleFront.RegionId,
+                true
+            );
+            WorldMgr.GetRegion(
+                (ushort)WorldMgr.LowerTierCampaignManager.ActiveBattleFront.RegionId,
+                true
+            );
+
             Log.Debug("Battlefront Manager", "Attaching Campaigns to Regions");
             // Attach Battlefronts to regions
             WorldMgr.AttachCampaignsToRegions();

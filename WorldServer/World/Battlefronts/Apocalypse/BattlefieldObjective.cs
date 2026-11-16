@@ -1051,7 +1051,19 @@ namespace WorldServer.World.Battlefronts.Apocalypse
 
         private void RemoveGlow()
         {
-            var goList = Region.GetObjects<GameObject>().Where(x => x.Entry == 99858);
+            var region = Region;
+
+            if (region == null)
+            {
+                BattlefrontLogger.Warn(
+                    $"{Name}: RemoveGlow skipped - Region not ready."
+                );
+                return;
+            }
+
+            var goList = region.GetObjects<GameObject>()
+                .Where(x => x.Entry == 99858);
+
             foreach (var gameObject in goList)
             {
                 gameObject.Destroy();
