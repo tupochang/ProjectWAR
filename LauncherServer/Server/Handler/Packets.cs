@@ -1,4 +1,4 @@
-﻿using Common;
+using Common;
 using FrameWork;
 using System;
 using System.Collections.Generic;
@@ -19,7 +19,7 @@ namespace AuthenticationServer.Server.Handler
             string password = packet.GetString();
             string email = packet.GetString();
             byte langID = (byte)packet.ReadByte();
-            Log.Debug("CL_CREATE", $"CL_CREATE Create Request : {username} {password} {email} lang: {langID}");
+            Log.Debug("CL_CREATE", $"Create account request for {username}; language: {langID}.");
 
             CreteAccountResult result = CreteAccountResult.ACCOUNT_BANNED;
 

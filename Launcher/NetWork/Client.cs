@@ -1,10 +1,11 @@
-﻿using NLog;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using WarZoneLib;
 
@@ -16,7 +17,7 @@ namespace Launcher
         public static string LocalServerIP = "127.0.0.1";
         public static int LocalServerPort = 8000;
         public static int TestServerPort = 8000;
-        public static bool Started;
+        private static PacketOut pendingRequest;
 
         public static string User;
         public static string authToken;
@@ -32,7 +33,7 @@ namespace Launcher
             ApocLauncher.Acc.Print(Message);
         }
 
-        public static bool Connect(string ip, int port)
+        public static bool Connect(string ip, int port, PacketOut request)
         {
             try
             {
@@ -53,13 +54,14 @@ namespace Launcher
                 Array.Copy(BitConverter.GetBytes(retryInterval), 0, inArray, size * 2, size);
                 _Socket.IOControl(IOControlCode.KeepAliveValues, inArray, null);
 
+                Interlocked.Exchange(ref pendingRequest, request)?.Dispose();
                 BeginReceive();
-
                 SendCheck();
             }
             catch (Exception e)
             {
-                MessageBox.Show("Can not connect to : " + ip + ":" + port + "\n" + e.Message);
+                Close();
+                _logger.Warn(e, $"Could not connect to Launcher Server {ip}:{port}.");
                 return false;
             }
 
@@ -68,6 +70,7 @@ namespace Launcher
 
         public static void Close()
         {
+            Interlocked.Exchange(ref pendingRequest, null)?.Dispose();
             try
             {
                 if (_Socket != null)
@@ -380,24 +383,23 @@ namespace Launcher
                     switch ((CheckResult)Result)
                     {
                         case CheckResult.LAUNCHER_OK:
-                            Start();
+                            SendPendingRequest();
                             break;
 
                         case CheckResult.LAUNCHER_VERSION:
                             string Message = packet.GetString();
-                            Print(Message);
+                            ApocLauncher.Acc.sendUI(Message);
                             Close();
                             break;
 
                         case CheckResult.LAUNCHER_FILE:
                             Client.UpdateWarData(Encoding.ASCII.GetBytes(packet.GetString()));
+                            SendPendingRequest();
                             break;
                     }
                     break;
 
                 case Opcodes.LCR_START:
-
-                    ApocLauncher.Acc.ReceiveStart();
 
                     byte response = packet.GetUint8();
                     _logger.Debug($"HandlePacket. Response Code : {response}");
@@ -405,28 +407,28 @@ namespace Launcher
                     if (response == 1) //invalud user/pass
                     {
                         _logger.Warn($"Invalid User / Pass");
-                        ApocLauncher.Acc.sendUI("Invalid User / Pass");
+                        ApocLauncher.Acc.sendUI("帳號或密碼不正確。");
 
                         return;
                     }
                     else if (response == 2) //banned
                     {
                         _logger.Warn($"Account is banned");
-                        ApocLauncher.Acc.sendUI("Account is banned");
+                        ApocLauncher.Acc.sendUI("此帳號已被停用。");
 
                         return;
                     }
                     else if (response == 3) //account not active
                     {
                         _logger.Warn($"Account is not active");
-                        ApocLauncher.Acc.sendUI("Account is not active");
+                        ApocLauncher.Acc.sendUI("此帳號尚未啟用。");
 
                         return;
                     }
                     else if (response > 3)
                     {
                         _logger.Error($"Unknown Response");
-                        ApocLauncher.Acc.sendUI("Unknown Response");
+                        ApocLauncher.Acc.sendUI("登入失敗，伺服器回傳了未知的錯誤。");
 
                         return;
                     }
@@ -437,23 +439,23 @@ namespace Launcher
                         try
                         {
                             var warDirectory = Directory.GetParent(Application.StartupPath);
-                            ApocLauncher.Acc.sendUI("Patching..");
+                            ApocLauncher.Acc.sendUI("正在更新遊戲檔案…");
                             patchExe();
                             UpdateWarData();
-                            ApocLauncher.Acc.sendUI("Patched. Starting WAR.exe");
+                            ApocLauncher.Acc.sendUI("遊戲檔案已更新，正在啟動 WAR.exe…");
 
                             _logger.Info($"Double checking mythlogin file exists.");
                             if (!File.Exists(Application.StartupPath + "\\mythloginserviceconfig.xml"))
                             {
                                 _logger.Warn($"{Application.StartupPath + "\\mythloginserviceconfig.xml"} does not exist.");
-                                ApocLauncher.Acc.sendUI("Cannot locate mythloginserviceconfig.xml");
+                                ApocLauncher.Acc.sendUI("找不到 mythloginserviceconfig.xml。");
                                 return;
                             }
                             // Use world.myp to determine whether we are in the correct directory.
                             if (!File.Exists(warDirectory.FullName + "\\world.myp"))
                             {
                                 _logger.Warn($"{warDirectory.FullName + "\\world.myp"} does not exist.");
-                                ApocLauncher.Acc.sendUI("Is your launcher in the Launcher folder?");
+                                ApocLauncher.Acc.sendUI("找不到 world.myp。請確認 Launcher 位於遊戲的 Launcher 資料夾內。");
                                 return;
                             }
 
@@ -484,7 +486,7 @@ namespace Launcher
                         catch (Exception e)
                         {
                             _logger.Info($"Failed to start Client {e.ToString()}");
-                            ApocLauncher.Acc.sendUI("Failed to start client.");
+                            ApocLauncher.Acc.sendUI("無法啟動遊戲。請查看 Launcher 日誌。");
                         }
                     }
 
@@ -497,41 +499,25 @@ namespace Launcher
                     break;
 
                 case Opcodes.LCR_CREATE:
-
-                    byte respons = packet.GetUint8();
-                    _logger.Debug($"HandlePacket. Response Code : {respons}");
-
-                    if (respons == 0) //invalud user/pass
-                    {
-                        _logger.Warn($"Account Name busy!");
-                        ApocLauncher.Acc.sendUI("Account Name busy!");
-
-                        return;
-                    }
-                    else if (respons == 1) //success
-                    {
-                        _logger.Warn($"Account created!");
-                        ApocLauncher.Acc.sendUI("Account created!");
-                        return;
-                    }
-                    else if (respons == 2) //banned
-                    {
-                        _logger.Warn($"Account is banned!");
-                        ApocLauncher.Acc.sendUI("Account is banned!");
-
-                        return;
-                    }
-
+                    byte createResult = packet.GetUint8();
+                    _logger.Info($"Account creation response: {createResult}");
+                    if (createResult == 1)
+                        ApocLauncher.Acc.AccountCreated(User);
+                    else if (createResult == 2)
+                        ApocLauncher.Acc.sendUI("此連線無法建立帳號，請聯絡伺服器管理員。");
+                    else
+                        ApocLauncher.Acc.sendUI("無法建立帳號。請確認帳號名稱可用、電子郵件格式正確。");
                     break;
             }
         }
 
-        public static void Start()
+        private static void SendPendingRequest()
         {
-            if (Started)
-                return;
-
-            Started = true;
+            using (PacketOut request = Interlocked.Exchange(ref pendingRequest, null))
+            {
+                if (request != null)
+                    SendTCP(request);
+            }
         }
 
         public static void SendCheck()

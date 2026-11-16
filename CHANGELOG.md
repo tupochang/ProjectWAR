@@ -1,5 +1,13 @@
 # 更新說明
 
+## Launcher 帳號介面
+
+- 新增繁中登入與建立帳號頁。伺服器欄顯示名稱與端點，本機預設為 `127.0.0.1:8000`。
+- 建立帳號前會檢查電子郵件格式及兩次密碼。登入與註冊各自送出對應請求，註冊成功後返回登入頁。
+- LauncherServer 的建立帳號日誌只記錄帳號與語系。
+- [下載 Release x64 Launcher](https://github.com/tupochang/ProjectWAR/releases/tag/launcher-account-ui-v1)。
+
+
 ## 2026-11-16
 
 ### Launcher 登入

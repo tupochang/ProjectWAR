@@ -48,7 +48,7 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
 
 ### 將新版 Launcher 放到測試客戶端
 
-建置後，`bin\Release\Launcher` 會包含 `mythloginserviceconfig.xml`。將產物複製到完整遊戲副本的 `Launcher` 子目錄，確認這份 XML 和 `Launcher.exe` 在同一層。更新既有部署時，先備份原設定，保留自訂的 `Launcher.exe.config` 與登入 XML，並確認 `LaunchLocal`、`AutoLaunch` 為 `true`。
+可從 [GitHub Releases](https://github.com/tupochang/ProjectWAR/releases/tag/launcher-account-ui-v1) 下載 Release x64 的 Launcher ZIP。也可自行建置，產物在 `bin\Release\Launcher`。將 ZIP 內的 `Launcher` 資料夾放到完整遊戲副本的根目錄，確認 `mythloginserviceconfig.xml` 和 `Launcher.exe` 在同一層。更新既有部署時，先備份原設定，保留自訂的 `Launcher.exe.config` 與登入 XML，並確認 `LaunchLocal`、`AutoLaunch` 為 `true`。
 
 - `127.0.0.1:8000` 是 LauncherServer，Launcher 用它登入並取得權杖。
 - `127.0.0.1:8048` 是 LobbyServer，`WAR.exe` 啟動後使用 XML 裡的 `<LoginServer>` 設定來連線。
@@ -72,7 +72,7 @@ Get-NetTCPConnection -State Listen -LocalPort 6800,8000,8048,10300 |
         @{Name='Process';Expression={(Get-Process -Id $_.OwningProcess).ProcessName}}
 ```
 
-首次使用可由 Launcher 的 **Create Account** 建立本機測試帳號。如果畫面回應不明確，可用以下唯讀查詢確認帳號是否建立。查不到資料時，檢查 LauncherServer 的 `CL_CREATE` 紀錄及 AccountCacher 的資料庫設定。分享日誌前請移除帳密、雜湊與 Token。
+首次使用請選擇 **建立帳號**，輸入帳號、電子郵件和兩次密碼。成功後畫面會返回登入頁。確認伺服器顯示「本機伺服器 · 127.0.0.1:8000」，再登入。如果畫面回應不明確，可用以下唯讀查詢確認帳號是否建立。查不到資料時，檢查 LauncherServer 的 `CL_CREATE` 紀錄及 AccountCacher 的資料庫設定。分享日誌前請移除帳密、雜湊與 Token。
 
 ```sql
 SELECT AccountId, Username
