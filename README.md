@@ -24,7 +24,9 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
    git apply --whitespace=nowarn .\2022-06-14_a91c2044.patch
    ```
 
-   檢查產生的 `SQL/updates/war_world/2022_06_14_00_war_world_gameobject_protos.sql`。它包含 `DROP TABLE IF EXISTS`，會重建 `gameobject_protos`。只在已備份、適用的本機資料庫執行。先在 SQL 的本機副本把 `USE` 指向 `war_world_curated`，再匯入這一份 SQL。本次匯入後為 **3,131 筆**。其餘封存是供人工審閱的歷史補丁。
+   檢查產生的 `SQL/updates/war_world/2022_06_14_00_war_world_gameobject_protos.sql`。它包含 `DROP TABLE IF EXISTS`，會重建 `gameobject_protos`。只在已備份、適用的本機資料庫執行。先在 SQL 的本機副本把 `USE` 指向 `war_world_curated`，再匯入這一份 SQL。
+
+   本機驗收前，已補上原本為空的 `gameobject_protos`，匯入後查到 **3,131 筆**。新的部署可用同一段 `SELECT COUNT(*)` 確認結果。其餘封存是供人工審閱的歷史補丁。
 
 ## 2. 編譯與放置設定
 
@@ -53,8 +55,19 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
    確認 `<ClientPort>8048</ClientPort>` 和 `<ClientVersion>1.4.8</ClientVersion>`。`RpcServerIp` 設為 `127.0.0.1`，`RpcServerPort` 設為 `6800`。
 4. **`World.xml`**
 
-   在 `<CharacterDatabase>` 和 `<WorldDatabase>` 兩段都填寫 MySQL 連線資訊。角色資料庫使用 `<Database>war_characters</Database>`，世界資料庫使用 `<Database>war_world_curated</Database>`。`<RealmId>1</RealmId>` 要與 `war_accounts.realms` 裡的本機 Realm 一致。
+   這個檔案有**兩個 MySQL 密碼欄位**，請逐一填妥。其他連線欄位如 `Server`、`Port` 和 `Username` 也要在各段核對。
+
+   | 在 `World.xml` 找到 | `<Database>` 填入 | `<Password>` 填入 |
+   | --- | --- | --- |
+   | `<CharacterDatabase>` | `war_characters` | 角色資料庫使用者的 MySQL 密碼 |
+   | `<WorldDatabase>` | `war_world_curated` | 世界資料庫使用者的 MySQL 密碼 |
+
+   如果兩段使用同一個 MySQL 帳號，兩處都填入相同密碼。`<RealmId>1</RealmId>` 要與 `war_accounts.realms` 裡的本機 Realm 一致。
 5. 四份檔案各自把 `<IConfiguredTheFile>false</IConfiguredTheFile>` 改為 `<IConfiguredTheFile>true</IConfiguredTheFile>`，然後存檔。保留 `bin\Release\Configs\mythloginserviceconfig.xml`，LauncherServer 啟動時也會讀取它。
+
+### 使用含啟動修正的建置產物
+
+請用本 fork 建置的 `WorldServer.exe` 和 `Launcher.exe`。WorldServer 現在會先建立高階與低階的活動戰區 Region，再掛載 Campaign。戰場目標清除發光物件時，若 Region 還沒就緒，會記錄警告並返回。Launcher 會更新 Build 573 真正讀取的 `data/mythloginserviceconfig.xml`。這些修正已在原始碼裡，依上一節建置即可套用。[更新說明](CHANGELOG.md)
 
 ### 將新版 Launcher 放到測試客戶端
 
@@ -98,7 +111,15 @@ WHERE Username = 'your_test_account';
 
 若登入後停在只有 `Server:` 的主選單，先核對本次遊戲日誌中的實際目的地，以及 `8048` 的程序是否為 `LobbyServer`。`8080` 是 Launcher 的背景檔案更新埠，請以 `8000` 的 Token 回應與 `8048` 的連線紀錄定位登入問題。
 
-## 4. 角色連線後卡在載入畫面
+## 4. 把遊戲介面切換成繁體中文
+
+1. 先用角色進入遊戲，打開聊天視窗。
+2. 輸入 `/language 8`（也可用 `/L 8`），按 Enter。
+3. 完全關閉遊戲，再從 Launcher 啟動一次。
+
+切換會使用客戶端已有的繁中資源。介面變成中文後，伺服器提供的任務和 NPC 文字仍可能是英文。若要切回英文，輸入 `/language 1` 後重啟。[語言指令與重啟方式](https://returnofreckoning.com/forum/viewtopic.php?t=9252) · [繁中指令的社群紀錄](https://forum.gamer.com.tw/C.php?bsn=8836&snA=25878)
+
+## 5. 角色連線後卡在載入畫面
 
 這次部署的 WorldServer 日誌出現 `F_CONNECT User connection`，接著記錄 `AddObject` 的 Zone 6 錯誤。這表示角色連線已到世界服務，但尚未成功加入地圖。先核對角色存檔與區域資料，再檢查地圖資源。
 
