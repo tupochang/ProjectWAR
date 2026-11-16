@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<AccountConfigs xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <IConfiguredTheFile>false</IConfiguredTheFile>
+<AccountConfig xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <IConfiguredTheFile>true</IConfiguredTheFile>
   <RpcInfo>
     <RpcIp>127.0.0.1</RpcIp>
     <RpcPort>6800</RpcPort>
@@ -11,7 +11,7 @@
     <Port>3306</Port>
     <Database>war_accounts</Database>
     <Username>root</Username>
-    <Password>password</Password>
+    <Password>YOUR_MYSQL_PASSWORD</Password>
     <Custom>Treat Tiny As Boolean=False</Custom>
     <Catalog />
     <IPAddress />
@@ -27,4 +27,4 @@
     <Tcp>true</Tcp>
     <Dump>false</Dump>
   </LogLevel>
-</AccountConfigs>
+</AccountConfig>

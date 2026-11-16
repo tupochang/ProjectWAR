@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <WorldConfigs xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <IConfiguredTheFile>false</IConfiguredTheFile>
+  <IConfiguredTheFile>true</IConfiguredTheFile>
   <AccountCacherInfo>
     <RpcLocalIp>127.0.0.1</RpcLocalIp>
     <RpcServerIp>127.0.0.1</RpcServerIp>
@@ -20,7 +20,7 @@
     <Port>3306</Port>
     <Database>war_characters</Database>
     <Username>root</Username>
-    <Password>password</Password>
+    <Password>YOUR_MYSQL_PASSWORD</Password>
     <Custom>Treat Tiny As Boolean=False</Custom>
     <Catalog />
     <IPAddress />
@@ -30,9 +30,9 @@
   <WorldDatabase>
     <Server>127.0.0.1</Server>
       <Port>3306</Port>
-    <Database>war_world</Database>
+    <Database>war_world_curated</Database>
     <Username>root</Username>
-    <Password>password</Password>
+    <Password>YOUR_MYSQL_PASSWORD</Password>
     <Custom>Treat Tiny As Boolean=False</Custom>
     <Catalog />
     <IPAddress />

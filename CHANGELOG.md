@@ -14,10 +14,15 @@
 - BattlefieldObjective 的 `RemoveGlow()` 遇到 Region 尚未就緒時，會寫入警告並返回，以避免空參考例外。
 - 本機部署另補入 `war_world_curated.gameobject_protos` 的 3,131 筆原型。資料來源與匯入方式見 [README](README.md#1-初始化資料庫)。
 
+### 本機 XML 範本
+
+- `Account.xml` 修正 `AccountConfig` 根節點，`Launcher.xml` 補上 `</Message>`，`World.xml` 預設指向 `war_world_curated`。
+- 四份範本已設定 `IConfiguredTheFile=true`；三個 MySQL 密碼欄位採用 `YOUR_MYSQL_PASSWORD` 佔位符。
+
 ### 驗收
 
 - Launcher、AccountCacher、LauncherServer、LobbyServer、WorldServer 已在乾淨的 fork 檢出套用本次程式差異後完成 Release x64 建置。
 - 獨立客戶端副本更新後，重新開啟 MYP，從目標路徑讀回 `127.0.0.1:8048`。資源索引維持 4,868 筆。目標資源缺失時可重開測試檔，且 SHA-256 維持相同。
 - 維護者以完整客戶端手動驗收，回報可成功登入。後續部署紀錄顯示角色連線已到 WorldServer，Zone 6 的地圖載入仍待排查。
-- README 補上首次帳號建立、四份 XML 的逐步修改（含 Account 根節點與 Launcher 的 Message 結束標籤）、Zone／LOS 路徑及角色位置的唯讀檢查。
+- README 補上首次帳號建立、四份可下載的本機 XML 範本、Zone／LOS 路徑及角色位置的唯讀檢查。
 - 部署步驟明列 `World.xml` 的兩個 MySQL 密碼欄位、已包含的啟動修正、3,131 筆原型的補齊方式，以及客戶端繁體中文指令。

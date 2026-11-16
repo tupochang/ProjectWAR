@@ -31,39 +31,22 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
 ## 2. 編譯與放置設定
 
 1. 開啟 `ProjectWAR.sln`，還原 NuGet 套件，選擇 **Release | x64**。建置 `Launcher`、`AccountCacher`、`LauncherServer`、`LobbyServer`、`WorldServer`。伺服器產物在 `bin\Release`，新版 Launcher 在 `bin\Release\Launcher`。若另外要編譯原生 `WarZone` 專案，需對應方案設定的 MSVC 工具組。若出現找不到 `NLog`，先確認 Launcher 專案的 NuGet 還原成功，再重新建置。
-2. 將 [ImportIntoProject](ImportIntoProject) 的內容複製到 `bin\Release`，保留 `Abilities`、`zones`、`los`、`Configs` 目錄結構。首次部署時，把 [WorldServer/Configs/LocalDevelopment](WorldServer/Configs/LocalDevelopment) 的四個 XML 複製到 `bin\Release\Configs`。
-### 修改 XML（服務能啟動的關鍵）
+2. 將 [ImportIntoProject](ImportIntoProject) 的內容複製到 `bin\Release`，保留 `Abilities`、`zones`、`los`、`Configs` 目錄結構。
 
-請用記事本或 Visual Studio 開啟 **`bin\Release\Configs`** 內的檔案。下面只列出要檢查或修改的段落，其他欄位保留範本內容。
+### 下載並放置已修正的 XML
 
-1. **`Account.xml`**
+1. 從 [LocalDevelopment 範本目錄](WorldServer/Configs/LocalDevelopment) 下載下表的四個 XML。從 GitHub 開啟檔案後可用 **Download raw file**，已下載整份專案的話，可直接使用其中的 `WorldServer\Configs\LocalDevelopment`。
+2. 把四個檔案複製到 **`bin\Release\Configs`**。已有本機設定時，先備份原檔。確認同一目錄也有上一步複製的 `mythloginserviceconfig.xml`，LauncherServer 啟動時會讀取它。
+3. 開啟執行目錄內的 `Account.xml` 和 `World.xml`，將 `YOUR_MYSQL_PASSWORD` 換成自己的 MySQL 密碼。`Account.xml` 要填一處，`World.xml` 的 `CharacterDatabase` 和 `WorldDatabase` 要各填一處。如果兩段使用同一個 MySQL 帳號，兩處都填相同的密碼。範本預設使用 `root` 和 `127.0.0.1:3306`。使用不同的 MySQL 帳號、主機或連接埠時，同時更新對應欄位。
 
-   把開頭的 `<AccountConfigs ...>` 改為 `<AccountConfig ...>`，保留標籤裡所有 `xmlns` 屬性。檔尾也改成 `</AccountConfig>`。這一步可修正 AccountCacher 的 XML 根節點錯誤。
+| 檔案 | 範本已套用的修正或設定 |
+| --- | --- |
+| [Account.xml](WorldServer/Configs/LocalDevelopment/Account.xml) | 根節點修正為 `AccountConfig`。使用 `war_accounts`，RPC 埠為 `6800`。 |
+| [Launcher.xml](WorldServer/Configs/LocalDevelopment/Launcher.xml) | 補齊 `</Message>`。Launcher 埠為 `8000`。 |
+| [Lobby.xml](WorldServer/Configs/LocalDevelopment/Lobby.xml) | 本機 Lobby 埠為 `8048`，客戶端版本為 `1.4.8`。 |
+| [World.xml](WorldServer/Configs/LocalDevelopment/World.xml) | 已指向 `war_characters` 和 `war_world_curated`。`RealmId` 預設為 `1`，須與 `war_accounts.realms` 的本機 Realm 一致。 |
 
-   在 `<AccountDB>` 裡填入 MySQL 主機、連接埠、使用者名稱與密碼，並確認 `<Database>war_accounts</Database>`。同機 MySQL 一般使用 `127.0.0.1:3306`。在 `<RpcInfo>` 保留 `<RpcPort>6800</RpcPort>`。
-2. **`Launcher.xml`**
-
-   範本中的 `<Message>` 那行缺少結束標籤。將整行改成：
-
-   ```xml
-   <Message>Invalid launcher version.</Message>
-   ```
-
-   確認 `<LauncherServerPort>8000</LauncherServerPort>` 和 `<RpcServerPort>6800</RpcServerPort>`。`RpcServerIp` 設為 `127.0.0.1`。
-3. **`Lobby.xml`**
-
-   確認 `<ClientPort>8048</ClientPort>` 和 `<ClientVersion>1.4.8</ClientVersion>`。`RpcServerIp` 設為 `127.0.0.1`，`RpcServerPort` 設為 `6800`。
-4. **`World.xml`**
-
-   這個檔案有**兩個 MySQL 密碼欄位**，請逐一填妥。其他連線欄位如 `Server`、`Port` 和 `Username` 也要在各段核對。
-
-   | 在 `World.xml` 找到 | `<Database>` 填入 | `<Password>` 填入 |
-   | --- | --- | --- |
-   | `<CharacterDatabase>` | `war_characters` | 角色資料庫使用者的 MySQL 密碼 |
-   | `<WorldDatabase>` | `war_world_curated` | 世界資料庫使用者的 MySQL 密碼 |
-
-   如果兩段使用同一個 MySQL 帳號，兩處都填入相同密碼。`<RealmId>1</RealmId>` 要與 `war_accounts.realms` 裡的本機 Realm 一致。
-5. 四份檔案各自把 `<IConfiguredTheFile>false</IConfiguredTheFile>` 改為 `<IConfiguredTheFile>true</IConfiguredTheFile>`，然後存檔。保留 `bin\Release\Configs\mythloginserviceconfig.xml`，LauncherServer 啟動時也會讀取它。
+四個範本均已設定 `IConfiguredTheFile=true`。
 
 ### 使用含啟動修正的建置產物
 
