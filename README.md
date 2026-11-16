@@ -7,6 +7,7 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
 - Windows x64、Visual Studio 的「.NET 桌面開發」工作負載、.NET Framework 4.8 Developer Pack。
 - MySQL Server 8.4、7-Zip、Git。可用 MySQL Workbench 執行 SQL。
 - 自備完整的 Warhammer Online **1.4.8 Build 573** 客戶端，包含 `WAR.exe`、`data.myp` 和 `world.myp`。以完整副本進行測試，將 `WAR.exe`、`data.myp`、原 Launcher 與設定的備份放在固定目錄。
+- 遊戲客戶端需要舊版 DirectX 元件。啟動 `WAR.exe` 前，請安裝 **DirectX End-User Runtimes (June 2010)**。執行下載的 `directx_Jun2010_redist.exe` 解壓縮，再從解壓目錄執行 `DXSETUP.exe`。此套件會補上舊版元件，Windows 現有的 DirectX 版本會照常使用。[Microsoft 官方下載](https://www.microsoft.com/en-us/download/details.aspx?id=8109)
 
 ## 1. 初始化資料庫
 
