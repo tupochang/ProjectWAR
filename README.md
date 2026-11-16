@@ -48,14 +48,12 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
 
 ### 將新版 Launcher 放到測試客戶端
 
-從 `bin\Release\Launcher` 複製新版產物到完整遊戲副本的 `Launcher` 子目錄。若已經有可用的 Launcher 部署，先備份該子目錄，再替換 `Launcher.exe`，保留原有的 `Launcher.exe.config` 和登入 XML。確認 `LaunchLocal`、`AutoLaunch` 為 `true`。
+建置後，`bin\Release\Launcher` 會包含 `mythloginserviceconfig.xml`。將產物複製到完整遊戲副本的 `Launcher` 子目錄，確認這份 XML 和 `Launcher.exe` 在同一層。更新既有部署時，先備份原設定，保留自訂的 `Launcher.exe.config` 與登入 XML，並確認 `LaunchLocal`、`AutoLaunch` 為 `true`。
 
-客戶端的 `mythloginserviceconfig.xml` 必須和 `Launcher.exe` 放在**同一層**。使用[登入設定範本](ImportIntoProject/Configs/mythloginserviceconfig.xml)，在 `<LoginServer>` 裡確認以下值。新版 Launcher 會用這份 XML 更新 `data.myp` 的既有登入資源。
+- `127.0.0.1:8000` 是 LauncherServer，Launcher 用它登入並取得權杖。
+- `127.0.0.1:8048` 是 LobbyServer，`WAR.exe` 啟動後使用 XML 裡的 `<LoginServer>` 設定來連線。
 
-```xml
-<Address>127.0.0.1</Address>
-<Port>8048</Port>
-```
+如果伺服器日誌已顯示 `LOGIN_SUCCESS`，遊戲卻未啟動，請檢查 Launcher 日誌是否顯示找不到 `mythloginserviceconfig.xml`。缺少時，將登入設定範本複製到遊戲的 `Launcher` 子目錄，再按一次登入。[登入設定範本](ImportIntoProject/Configs/mythloginserviceconfig.xml)
 
 ## 3. 啟動與登入驗收
 
