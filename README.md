@@ -10,23 +10,16 @@ ProjectWAR 是《Warhammer Online: Age of Reckoning》的伺服器模擬專案�
 
 ## 1. 初始化資料庫
 
-1. 解開 [Database/Database.7z](Database/Database.7z)，開啟 MySQL Workbench 並連線到本機 MySQL。用 **File → Open SQL Script** 逐一開啟 `war_accounts.sql`、`war_characters.sql`、`war_world.sql`，各按一次工具列的閃電圖示執行整份腳本。重新整理左側 **Schemas**，確認三個資料庫都出現。依據 SQL 內的 `USE`，三份腳本分別使用 `war_accounts`、`war_characters` 和 `war_world_curated`。已有資料時先備份，初始 SQL 含建表與重建資料表指令。
-2. 檢查 `war_accounts.realms`。本機驗收使用 `RealmId=1`、`Name=ProjectWAR`、`Adresse=127.0.0.1`、`Port=10300`。`RealmId` 必須與 `World.xml` 一致。
-3. 檢查遊戲物件原型數量：
+1. 下載並解開更新後的 [Database.7z](Database/Database.7z)。開啟 MySQL Workbench 並連線到本機 MySQL。已有資料時先備份，安裝用 SQL 會重建資料表。
+2. 用 **File → Open SQL Script** 按下表順序開啟檔案，在每份 SQL 的分頁按工具列的閃電圖示執行整份腳本。
 
-   ```sql
-   SELECT COUNT(*) FROM war_world_curated.gameobject_protos;
-   ```
+   | 匯入順序 | SQL 檔案 | 建立的資料庫 |
+   | --- | --- | --- |
+   | 1 | `war_accounts.sql` | `war_accounts` |
+   | 2 | `war_characters.sql` | `war_characters` |
+   | 3 | `war_world.sql` | `war_world_curated`，已包含 **3,131 筆**遊戲物件原型 |
 
-   如果是剛匯入的基礎資料庫且此表為空，本次驗收使用的資料來源是 [Database/cooler_sai_sql_changes.7z](Database/cooler_sai_sql_changes.7z) 裡的 `sql_patches.7z`。從內層擷取 `2022-06-14_a91c2044.patch` 到空目錄，再於該目錄產生 SQL：
-
-   ```powershell
-   git apply --whitespace=nowarn .\2022-06-14_a91c2044.patch
-   ```
-
-   檢查產生的 `SQL/updates/war_world/2022_06_14_00_war_world_gameobject_protos.sql`。它包含 `DROP TABLE IF EXISTS`，會重建 `gameobject_protos`。只在已備份、適用的本機資料庫執行。先在 SQL 的本機副本把 `USE` 指向 `war_world_curated`，再匯入這一份 SQL。
-
-   本機驗收前，已補上原本為空的 `gameobject_protos`，匯入後查到 **3,131 筆**。新的部署可用同一段 `SELECT COUNT(*)` 確認結果。其餘封存是供人工審閱的歷史補丁。
+3. 在左側 **Schemas** 按重新整理，確認三個資料庫都出現。檢查 `war_accounts.realms`。本機驗收使用 `RealmId=1`、`Name=ProjectWAR`、`Adresse=127.0.0.1`、`Port=10300`。`RealmId` 必須與 `World.xml` 一致。
 
 ## 2. 編譯與放置設定
 

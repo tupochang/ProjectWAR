@@ -12,7 +12,8 @@
 
 - 在將 Campaign 掛到 Region 前，先建立高階與低階的活動 Battlefront Region。
 - BattlefieldObjective 的 `RemoveGlow()` 遇到 Region 尚未就緒時，會寫入警告並返回，以避免空參考例外。
-- 本機部署另補入 `war_world_curated.gameobject_protos` 的 3,131 筆原型。資料來源與匯入方式見 [README](README.md#1-初始化資料庫)。
+- 最初安裝建立帳號、角色和世界三個資料庫。啟動 WorldServer 時發現世界資料庫的 `gameobject_protos` 是空表，欄位也和伺服器目前的資料模型不同。本機後來將歷史補丁的原型匯入 `war_world_gameobjects_stage`，再補進正在使用的 `war_world_curated`。畫面中的 `war_world` 是本機保留的舊世界資料庫。
+- 更新後的 `Database.7z` 已在 `war_world.sql` 內整合相容表結構及 **3,131 筆**原型。資料取自倉庫封存中的 `2022-06-14_a91c2044.patch`。新版安裝仍只匯入三個 SQL 檔，匯入後建立 `war_accounts`、`war_characters`、`war_world_curated`。[安裝說明](README.md#1-初始化資料庫)
 
 ### 本機 XML 範本
 
@@ -25,4 +26,4 @@
 - 獨立客戶端副本更新後，重新開啟 MYP，從目標路徑讀回 `127.0.0.1:8048`。資源索引維持 4,868 筆。目標資源缺失時可重開測試檔，且 SHA-256 維持相同。
 - 維護者以完整客戶端手動驗收，回報可成功登入。後續部署紀錄顯示角色連線已到 WorldServer，Zone 6 的地圖載入仍待排查。
 - README 補上首次帳號建立、四份可下載的本機 XML 範本、Zone／LOS 路徑及角色位置的唯讀檢查。
-- 部署步驟明列 `World.xml` 的兩個 MySQL 密碼欄位、已包含的啟動修正、3,131 筆原型的補齊方式，以及客戶端繁體中文指令。
+- 部署步驟明列 `World.xml` 的兩個 MySQL 密碼欄位、已包含的啟動修正，以及客戶端繁體中文指令。
